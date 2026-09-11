@@ -53,13 +53,26 @@ export const AdaptiveQuizPage: React.FC = () => {
   >([{ questionIndex: 0, difficulty: 'Medium' }]);
 
   useEffect(() => {
+    let isMounted = true;
     const fetchQuiz = async () => {
       setLoading(true);
-      const data = await quizService.getQuizById(quizId || 'quiz_py_functions');
-      setQuiz(data);
-      setLoading(false);
+      try {
+        const data = await quizService.getQuizById(quizId || 'quiz_py_functions');
+        if (isMounted) {
+          setQuiz(data);
+        }
+      } catch (err) {
+        console.error('Error fetching quiz data:', err);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
     };
     fetchQuiz();
+    return () => {
+      isMounted = false;
+    };
   }, [quizId]);
 
   // Question Timer

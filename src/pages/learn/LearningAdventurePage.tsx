@@ -26,22 +26,42 @@ export const LearningAdventurePage: React.FC = () => {
 
   const [worlds, setWorlds] = useState<AdventureWorld[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [selectedSubject, setSelectedSubject] = useState<string>('python');
+  const [selectedSubject, setSelectedSubject] = useState<string>(() => searchParams.get('subject') || 'python');
   const [selectedNode, setSelectedNode] = useState<AdventureNode | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const subParam = searchParams.get('subject');
+    if (subParam && subParam !== selectedSubject) {
+      setSelectedSubject(subParam);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    let isMounted = true;
     const fetchData = async () => {
       setLoading(true);
-      const [worldsData, subjectsData] = await Promise.all([
-        courseService.getAdventureWorlds(selectedSubject),
-        courseService.getSubjects()
-      ]);
-      setWorlds(worldsData);
-      setSubjects(subjectsData);
-      setLoading(false);
+      try {
+        const [worldsData, subjectsData] = await Promise.all([
+          courseService.getAdventureWorlds(selectedSubject),
+          courseService.getSubjects()
+        ]);
+        if (isMounted) {
+          setWorlds(worldsData);
+          setSubjects(subjectsData);
+        }
+      } catch (err) {
+        console.error('Error loading adventure worlds:', err);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
     };
     fetchData();
+    return () => {
+      isMounted = false;
+    };
   }, [selectedSubject]);
 
   const activeSubjectObj = subjects.find((s) => s.slug === selectedSubject) || subjects[0];

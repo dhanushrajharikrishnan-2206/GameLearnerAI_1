@@ -29,13 +29,26 @@ export const SkillTreePage: React.FC = () => {
   const categories = ['All', 'Programming', 'Algorithms', 'Data Structures', 'AI & Machine Learning'];
 
   useEffect(() => {
+    let isMounted = true;
     const fetchSkills = async () => {
       setLoading(true);
-      const data = await assessmentService.getSkillTree(selectedCategory);
-      setSkills(data);
-      setLoading(false);
+      try {
+        const data = await assessmentService.getSkillTree(selectedCategory);
+        if (isMounted) {
+          setSkills(data);
+        }
+      } catch (err) {
+        console.error('Error fetching skill tree:', err);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
     };
     fetchSkills();
+    return () => {
+      isMounted = false;
+    };
   }, [selectedCategory]);
 
   const getSkillIcon = (iconName: string) => {

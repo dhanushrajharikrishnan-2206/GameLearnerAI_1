@@ -21,13 +21,26 @@ export const AchievementsPage: React.FC = () => {
   const [selectedAchievement, setSelectedAchievement] = useState<Achievement | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
     const fetchAchievements = async () => {
       setLoading(true);
-      const data = await achievementService.getAchievements();
-      setAchievements(data);
-      setLoading(false);
+      try {
+        const data = await achievementService.getAchievements();
+        if (isMounted) {
+          setAchievements(data);
+        }
+      } catch (err) {
+        console.error('Error fetching achievements:', err);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
     };
     fetchAchievements();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const unlockedCount = achievements.filter((a) => a.unlocked).length;

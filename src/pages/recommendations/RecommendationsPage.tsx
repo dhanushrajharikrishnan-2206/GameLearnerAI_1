@@ -26,17 +26,30 @@ export const RecommendationsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
     const fetchData = async () => {
       setLoading(true);
-      const [recs, diag] = await Promise.all([
-        recommendationService.getRecommendations(),
-        recommendationService.getStrengthsAndWeaknesses()
-      ]);
-      setRecommendations(recs);
-      setDiagnostics(diag);
-      setLoading(false);
+      try {
+        const [recs, diag] = await Promise.all([
+          recommendationService.getRecommendations(),
+          recommendationService.getStrengthsAndWeaknesses()
+        ]);
+        if (isMounted) {
+          setRecommendations(recs);
+          setDiagnostics(diag);
+        }
+      } catch (err) {
+        console.error('Error fetching AI recommendations and diagnostics:', err);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
     };
     fetchData();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const getPriorityBadge = (priority: AIRecommendation['priority']) => {

@@ -30,13 +30,26 @@ export const SubjectExplorerPage: React.FC = () => {
   const [sortBy, setSortBy] = useState<'mastery' | 'name' | 'recommended'>('recommended');
 
   useEffect(() => {
+    let isMounted = true;
     const fetchSubjects = async () => {
       setLoading(true);
-      const data = await courseService.getSubjects();
-      setSubjects(data);
-      setLoading(false);
+      try {
+        const data = await courseService.getSubjects();
+        if (isMounted) {
+          setSubjects(data);
+        }
+      } catch (err) {
+        console.error('Error fetching subjects:', err);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
     };
     fetchSubjects();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const getSubjectIcon = (iconName: string) => {

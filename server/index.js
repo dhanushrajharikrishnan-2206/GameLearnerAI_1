@@ -23,6 +23,15 @@ import {
   verifyToken,
   authenticateToken
 } from './auth.js';
+import {
+  curriculumSubjects,
+  curriculumWorlds,
+  adaptiveQuizData,
+  curriculumAchievements,
+  curriculumRecommendations,
+  curriculumDiagnostics,
+  curriculumSkillNodes
+} from './curriculum.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -959,6 +968,175 @@ app.get('/api/analytics/summary', (req, res) => {
   } catch (err) {
     res.status(500).json({ error: 'Failed to retrieve analytics' });
   }
+});
+
+// ==========================================
+// COURSES, WORLDS & SUBJECTS ROUTES
+// ==========================================
+
+app.get('/api/courses/subjects', (req, res) => {
+  res.json(curriculumSubjects);
+});
+
+app.get('/api/courses/subjects/:slug', (req, res) => {
+  const subject = curriculumSubjects.find(s => s.slug === req.params.slug) || curriculumSubjects[0];
+  res.json(subject);
+});
+
+app.get('/api/courses/:slug/worlds', (req, res) => {
+  res.json(curriculumWorlds);
+});
+
+// ==========================================
+// ADAPTIVE QUIZ ROUTES
+// ==========================================
+
+app.get('/api/quizzes/:id', (req, res) => {
+  res.json({
+    ...adaptiveQuizData,
+    id: req.params.id || adaptiveQuizData.id
+  });
+});
+
+app.post('/api/quizzes/:id/submit', (req, res) => {
+  try {
+    const { answers, difficultyProgression } = req.body;
+    const questions = adaptiveQuizData.questions;
+    let correctCount = 0;
+    let totalXp = 0;
+
+    const answersBreakdown = Array.isArray(answers) ? answers.map((ans, idx) => {
+      const q = questions[idx] || questions[0];
+      const isCorrect = ans.selectedOption === q.correctAnswer;
+      if (isCorrect) {
+        correctCount++;
+        totalXp += (q.xpValue || 40);
+      }
+      return {
+        questionId: q.id,
+        questionText: q.question,
+        userAnswer: ans.selectedOption,
+        correctAnswer: q.correctAnswer,
+        isCorrect,
+        difficulty: (difficultyProgression && difficultyProgression[idx]?.difficulty) || q.difficulty,
+        timeTakenSeconds: ans.timeTaken || 12
+      };
+    }) : [];
+
+    const totalQuestions = questions.length || 5;
+    const accuracy = Math.round((correctCount / totalQuestions) * 100);
+    const bonusXp = accuracy >= 80 ? 100 : 50;
+    const finalXp = totalXp + bonusXp;
+
+    // If bearer token is present, record game session and add XP to user in SQLite
+    const token = (req.headers['authorization'] && req.headers['authorization'].split(' ')[1]) || req.query.token;
+    if (token) {
+      try {
+        const user = verifyToken(token);
+        if (user) {
+          addXp(user.id, finalXp);
+          recordGameSession(user.id, {
+            gameType: 'adaptive_quiz',
+            score: correctCount * 20,
+            accuracy,
+            xpEarned: finalXp,
+            coinsEarned: Math.round(finalXp / 3)
+          });
+        }
+      } catch (e) {}
+    }
+
+    res.json({
+      quizId: req.params.id,
+      quizTitle: adaptiveQuizData.title,
+      subject: adaptiveQuizData.subject,
+      score: correctCount,
+      totalQuestions,
+      accuracy,
+      timeSpentSeconds: Array.isArray(answers) ? answers.reduce((acc, curr) => acc + (curr.timeTaken || 0), 0) || 75 : 75,
+      xpEarned: finalXp,
+      coinsEarned: Math.round(finalXp / 3),
+      difficultyProgression: difficultyProgression || [{ questionIndex: 0, difficulty: 'Medium' }],
+      answersBreakdown,
+      aiAnalysis: {
+        overallSummary: accuracy >= 80
+          ? 'Phenomenal mastery displayed! The adaptive AI detected exceptional rapid comprehension in first-class functions and closures, dynamically scaling question difficulty up to Hard.'
+          : 'Solid foundational effort! The adaptive AI identified opportunities to solidify call stack visualization and edge case handling.',
+        strongestTopic: 'Default Arguments & Function Scope',
+        weakestTopic: accuracy < 100 ? 'Closures & Scope Chains' : 'None detected! 100% Mastery!',
+        nextRecommendation: 'Move forward to World 3: Advanced Architecture & Async Paradigms.',
+        suggestedReviewCheckpoints: [
+          'Review Python function parameter packing with *args and **kwargs',
+          'Practice tracing execution stack frames'
+        ]
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to process quiz submission', message: err.message });
+  }
+});
+
+// ==========================================
+// SKILL TREE / ASSESSMENTS ROUTES
+// ==========================================
+
+app.get('/api/assessments/skills', (req, res) => {
+  const { category } = req.query;
+  if (category && category !== 'All') {
+    const filtered = curriculumSkillNodes.filter(s => s.category.toLowerCase().includes(category.toLowerCase()));
+    return res.json(filtered);
+  }
+  res.json(curriculumSkillNodes);
+});
+
+app.post('/api/assessments/skills/:id/unlock', (req, res) => {
+  const target = curriculumSkillNodes.find(s => s.id === req.params.id) || curriculumSkillNodes[0];
+  const updated = { ...target, isUnlocked: true, masteryPercentage: Math.max(target.masteryPercentage, 20) };
+  res.json(updated);
+});
+
+// ==========================================
+// ACHIEVEMENTS ROUTES
+// ==========================================
+
+app.get('/api/achievements', (req, res) => {
+  res.json(curriculumAchievements);
+});
+
+app.post('/api/achievements/:id/claim', (req, res) => {
+  const ach = curriculumAchievements.find(a => a.id === req.params.id);
+  const xpReward = ach ? ach.xpReward : 100;
+  res.json({
+    success: true,
+    xpAwarded: xpReward
+  });
+});
+
+// ==========================================
+// AI RECOMMENDATIONS & INSIGHTS ROUTES
+// ==========================================
+
+app.get('/api/recommendations', (req, res) => {
+  res.json(curriculumRecommendations);
+});
+
+app.get('/api/recommendations/diagnostics', (req, res) => {
+  res.json(curriculumDiagnostics);
+});
+
+app.post('/api/recommendations/generate-path', (req, res) => {
+  const { goal } = req.body;
+  res.json({
+    pathId: 'path_ai_adaptive_' + Date.now(),
+    goal: goal || 'Custom Accelerated Track',
+    topics: [
+      'Python Functions & Closures',
+      'Call Stack & Recursive Patterns',
+      'Divide & Conquer Paradigms',
+      'Dynamic Programming & Memoization',
+      'Algorithmic Complexity & Profiling'
+    ]
+  });
 });
 
 // ==========================================
