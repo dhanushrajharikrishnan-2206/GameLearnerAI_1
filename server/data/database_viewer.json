@@ -1,0 +1,84 @@
+{
+  "exportedAt": "2026-09-11T07:30:11.638Z",
+  "databaseFile": "C:\\Users\\kisho\\OneDrive\\Desktop\\Techaflon\\GameLearnerAI_0\\server\\data\\gamelearn.db",
+  "totalUsers": 2,
+  "users": [
+    {
+      "id": "0630e20d-de0d-4c55-bfcb-746d146acec3",
+      "name": "Samantha Ray",
+      "email": "learner_1789111010377@example.com",
+      "title": "Neural Knight",
+      "level": 2,
+      "xp": 550,
+      "coins": 75,
+      "streak": 1,
+      "skill_level": "Advanced",
+      "learning_goal": "Career Preparation",
+      "created_at": "2026-09-11 07:16:50",
+      "chosenTopics": [
+        "AI & Machine Learning",
+        "Cybersecurity",
+        "Data Science",
+        "Python Mastery"
+      ]
+    },
+    {
+      "id": "demo-user-alex-001",
+      "name": "Alex Chen",
+      "email": "alex@example.com",
+      "title": "Algorithm Alchemist",
+      "level": 14,
+      "xp": 4820,
+      "coins": 420,
+      "streak": 12,
+      "skill_level": "Intermediate",
+      "learning_goal": "Skill Development",
+      "created_at": "2026-09-11 07:16:03",
+      "chosenTopics": [
+        "AI & Machine Learning",
+        "Computer Science",
+        "Data Science",
+        "Programming"
+      ]
+    }
+  ],
+  "completedTopics": [
+    {
+      "user_email": "learner_1789111010377@example.com",
+      "topic_id": "neural-nets-101",
+      "topic_title": "Introduction to Backpropagation & Loss",
+      "category": "AI & Machine Learning",
+      "score": 98,
+      "status": "completed",
+      "completed_at": "2026-09-11 07:16:50"
+    },
+    {
+      "user_email": "alex@example.com",
+      "topic_id": "algo-01",
+      "topic_title": "Divide and Conquer Algorithms",
+      "category": "Algorithms",
+      "score": 95,
+      "status": "completed",
+      "completed_at": null
+    },
+    {
+      "user_email": "alex@example.com",
+      "topic_id": "py-01",
+      "topic_title": "Python Asynchronous Paradigms",
+      "category": "Programming",
+      "score": 100,
+      "status": "completed",
+      "completed_at": null
+    },
+    {
+      "user_email": "alex@example.com",
+      "topic_id": "db-01",
+      "topic_title": "SQL Indexing & Query Optimizations",
+      "category": "Databases",
+      "score": 90,
+      "status": "completed",
+      "completed_at": null
+    }
+  ],
+  "gameHistory": []
+}
